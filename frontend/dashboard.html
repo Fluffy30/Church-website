@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Grace Community Church</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+    <div class="container nav">
+        <a href="index.html" class="nav-brand"><span class="cross">✝</span> Grace Community Church</a>
+        <button class="nav-toggle" aria-label="Toggle menu">☰</button>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="events.html">Events</a></li>
+            <li data-auth="user"><a href="messages.html">Messages</a></li>
+            <li data-auth="staff"><a href="dashboard.html" class="active">Dashboard</a></li>
+            <li data-auth="user"><a href="#" data-logout>Logout</a></li>
+        </ul>
+    </div>
+</header>
+
+<!-- Gate: only admins/leaders should see this page's content -->
+<section class="section" data-auth="staff">
+    <div class="container dashboard">
+        <aside class="dashboard-sidebar">
+            <a href="#" class="tab-link active" data-tab="events">📅 Events</a>
+            <a href="#" class="tab-link" data-tab="prayers">🙏 Prayer Requests</a>
+            <a href="#" class="tab-link" data-tab="registrations">📋 Follow-Ups</a>
+            <a href="#" class="tab-link" data-tab="members">👥 Members</a>
+            <a href="#" class="tab-link" data-tab="groups">💬 Groups</a>
+        </aside>
+
+        <div class="dashboard-content">
+            <div id="alert-box"></div>
+
+            <!-- ===== Events Tab ===== -->
+            <div class="tab-panel" id="tab-events">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h2 class="mt-0">Manage Events</h2>
+                    <button class="btn btn-primary btn-sm" id="show-event-form-btn">+ New Event</button>
+                </div>
+
+                <form id="event-form" class="card" style="display:none; margin-bottom:24px;">
+                    <input type="hidden" id="event-id">
+                    <label for="event-title">Title</label>
+                    <input type="text" id="event-title" required>
+                    <label for="event-description">Description</label>
+                    <textarea id="event-description" required></textarea>
+                    <label for="event-location">Location</label>
+                    <input type="text" id="event-location" required>
+                    <label for="event-date">Date & Time</label>
+                    <input type="datetime-local" id="event-date" required>
+                    <div class="form-actions" style="display:flex; gap:10px;">
+                        <button type="button" class="btn btn-outline btn-block" id="cancel-event-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-block">Save Event</button>
+                    </div>
+                </form>
+
+                <div id="events-table-wrap">Loading…</div>
+            </div>
+
+            <!-- ===== Prayer Requests Tab ===== -->
+            <div class="tab-panel" id="tab-prayers" style="display:none;">
+                <h2 class="mt-0">Prayer Requests (Private)</h2>
+                <p class="muted">Visible only to admins and leaders.</p>
+                <div id="prayers-table-wrap">Loading…</div>
+            </div>
+
+            <!-- ===== Registrations / Follow-ups Tab ===== -->
+            <div class="tab-panel" id="tab-registrations" style="display:none;">
+                <h2 class="mt-0">New Contacts & Follow-Ups</h2>
+                <div id="registrations-table-wrap">Loading…</div>
+            </div>
+
+            <!-- ===== Members Tab ===== -->
+            <div class="tab-panel" id="tab-members" style="display:none;">
+                <h2 class="mt-0">Members</h2>
+                <input type="text" id="member-search" placeholder="Search by name or email…" style="max-width:320px; margin-bottom:16px;">
+                <div id="members-table-wrap">Loading…</div>
+            </div>
+
+            <!-- ===== Groups Tab ===== -->
+            <div class="tab-panel" id="tab-groups" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h2 class="mt-0">Groups</h2>
+                    <button class="btn btn-primary btn-sm" id="show-group-form-btn">+ New Group</button>
+                </div>
+                <form id="group-form" class="card" style="display:none; margin-bottom:24px;">
+                    <label for="group-name">Group Name</label>
+                    <input type="text" id="group-name" required>
+                    <label for="group-desc">Description</label>
+                    <textarea id="group-desc"></textarea>
+                    <div class="form-actions" style="display:flex; gap:10px;">
+                        <button type="button" class="btn btn-outline btn-block" id="cancel-group-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-block">Create</button>
+                    </div>
+                </form>
+                <div id="groups-list-wrap">Loading…</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Access-denied notice for non-staff -->
+<section class="section" data-auth="guest">
+    <div class="container text-center"><h2>Please log in as staff to view the dashboard.</h2></div>
+</section>
+<section class="section" id="member-denied" style="display:none;">
+    <div class="container text-center"><h2>You don't have permission to view this page.</h2></div>
+</section>
+
+<footer class="site-footer">
+    <div class="container footer-small">&copy; 2026 Grace Community Church. All rights reserved.</div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

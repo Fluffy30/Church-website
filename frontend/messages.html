@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages — Grace Community Church</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+    <div class="container nav">
+        <a href="index.html" class="nav-brand"><span class="cross">✝</span> Grace Community Church</a>
+        <button class="nav-toggle" aria-label="Toggle menu">☰</button>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="events.html">Events</a></li>
+            <li><a href="prayer.html">Prayer Requests</a></li>
+            <li><a href="register.html">Connect / Register</a></li>
+            <li data-auth="user"><a href="messages.html" class="active">Messages</a></li>
+            <li data-auth="staff"><a href="dashboard.html">Dashboard</a></li>
+            <li data-auth="user"><a href="#" data-logout>Logout</a></li>
+        </ul>
+    </div>
+</header>
+
+<section class="section" data-auth="user">
+    <div class="container">
+        <h1 class="section-title text-center">Group Messages</h1>
+        <p class="section-subtitle">Chat with your church groups in real time.</p>
+
+        <div id="alert-box"></div>
+
+        <div class="chat-layout">
+            <aside class="chat-sidebar">
+                <div class="chat-sidebar-header">
+                    <strong>Your Groups</strong>
+                    <button class="btn btn-primary btn-sm" id="new-group-btn" data-auth="staff">+ New</button>
+                </div>
+                <div id="group-list"><p class="muted" style="padding:16px;">Loading…</p></div>
+            </aside>
+
+            <main class="chat-main">
+                <div class="chat-header" id="chat-header">Select a group to start chatting</div>
+                <div class="chat-messages" id="chat-messages"></div>
+                <div class="typing-indicator" id="typing-indicator"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="message-input" placeholder="Type a message…" disabled>
+                    <button class="btn btn-primary" id="send-btn" disabled>Send</button>
+                </div>
+            </main>
+        </div>
+    </div>
+</section>
+
+<!-- Guest gate: shown to anyone not logged in -->
+<section class="section" data-auth="guest">
+    <div class="container text-center">
+        <h2>Please log in to view your messages</h2>
+        <p class="muted">Group messaging is available to registered members.</p>
+        <a href="login.html" class="btn btn-primary">Log In</a>
+    </div>
+</section>
+
+<!-- ===== New Group Modal (admin/leader only) ===== -->
+<div id="new-group-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center;">
+    <div class="form-card" style="max-width:440px;">
+        <h3>Create a New Group</h3>
+        <div id="modal-alert-box"></div>
+        <form id="new-group-form">
+            <label for="group-name">Group Name</label>
+            <input type="text" id="group-name" required placeholder="e.g. Youth Ministry">
+            <label for="group-desc">Description (optional)</label>
+            <textarea id="group-desc" placeholder="What this group is for"></textarea>
+            <div class="form-actions" style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-outline btn-block" id="cancel-group-btn">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-block">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer class="site-footer">
+    <div class="container footer-small">&copy; 2026 Grace Community Church. All rights reserved.</div>
+</footer>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/messages.js"></script>
+</body>
+</html>

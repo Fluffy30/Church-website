@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grace Community Church</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ================= HEADER / NAV ================= -->
+<header class="site-header">
+    <div class="container nav">
+        <a href="index.html" class="nav-brand"><span class="cross">✝</span> Grace Community Church</a>
+        <button class="nav-toggle" aria-label="Toggle menu">☰</button>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="events.html">Events</a></li>
+            <li><a href="prayer.html">Prayer Requests</a></li>
+            <li><a href="register.html">Connect / Register</a></li>
+            <li data-auth="user"><a href="messages.html">Messages</a></li>
+            <li data-auth="staff"><a href="dashboard.html">Dashboard</a></li>
+            <li data-auth="guest"><a href="login.html" class="btn btn-primary btn-sm">Login</a></li>
+            <li data-auth="user"><a href="#" data-logout>Logout</a></li>
+        </ul>
+    </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+    <div class="container">
+        <h1>Welcome Home</h1>
+        <p>A warm, Christ-centered community for everyone — come as you are, and grow with us in faith, love, and service.</p>
+        <div class="actions">
+            <a href="register.html" class="btn btn-accent">Plan Your Visit</a>
+            <a href="events.html" class="btn btn-outline" style="background:#fff;">See Upcoming Events</a>
+        </div>
+    </div>
+</section>
+
+<!-- ================= ABOUT SNIPPET ================= -->
+<section class="section">
+    <div class="container">
+        <h2 class="section-title text-center">Who We Are</h2>
+        <p class="section-subtitle">
+            Grace Community Church exists to help people know God, grow in faith, and serve our neighbors through
+            worship, discipleship, and outreach — every week, in every season.
+        </p>
+        <div class="grid">
+            <div class="card text-center">
+                <h3>Worship</h3>
+                <p class="muted">Join us for uplifting, Spirit-filled services every week.</p>
+            </div>
+            <div class="card text-center">
+                <h3>Community</h3>
+                <p class="muted">Small groups and ministries where real relationships grow.</p>
+            </div>
+            <div class="card text-center">
+                <h3>Outreach</h3>
+                <p class="muted">Serving our city through food drives, missions, and support programs.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= UPCOMING EVENTS PREVIEW ================= -->
+<section class="section" style="background:#fff;">
+    <div class="container">
+        <h2 class="section-title text-center">Upcoming Events</h2>
+        <p class="section-subtitle">A few things happening soon — see the full calendar for details.</p>
+        <div id="events-preview" class="grid">
+            <p class="muted text-center">Loading events…</p>
+        </div>
+        <div class="text-center" style="margin-top:32px;">
+            <a href="events.html" class="btn btn-outline">View All Events</a>
+        </div>
+    </div>
+</section>
+
+<!-- ================= PRAYER + REGISTER CTA ================= -->
+<section class="section">
+    <div class="container grid" style="grid-template-columns: repeat(auto-fit, minmax(320px,1fr));">
+        <div class="card">
+            <h3>Need Prayer?</h3>
+            <p class="muted">Submit a prayer request privately — our team will pray over it and follow up if you'd like.</p>
+            <a href="prayer.html" class="btn btn-primary">Submit a Prayer Request</a>
+        </div>
+        <div class="card">
+            <h3>New Here?</h3>
+            <p class="muted">Tell us how to reach you — by phone, WhatsApp, or email — and we'll follow up personally.</p>
+            <a href="register.html" class="btn btn-primary">Connect With Us</a>
+        </div>
+    </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="site-footer">
+    <div class="container">
+        <div>
+            <strong style="color:#fff;">Grace Community Church</strong>
+            <p class="footer-small" style="margin-top:8px;">123 Faith Avenue, Kampala, Uganda</p>
+        </div>
+        <ul class="footer-links">
+            <li><a href="events.html">Events</a></li>
+            <li><a href="prayer.html">Prayer Requests</a></li>
+            <li><a href="register.html">Register</a></li>
+            <li><a href="login.html">Member Login</a></li>
+        </ul>
+    </div>
+    <div class="container footer-small">&copy; 2026 Grace Community Church. All rights reserved.</div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+    // Load a few upcoming events for the homepage preview.
+    (async function loadPreview() {
+        const el = document.getElementById("events-preview");
+        try {
+            const { events } = await Api.get("/events?upcoming=true");
+            if (!events.length) {
+                el.innerHTML = `<p class="muted text-center">No upcoming events posted yet. Check back soon!</p>`;
+                return;
+            }
+            el.innerHTML = events.slice(0, 3).map(ev => `
+          <div class="card event-card">
+            <span class="event-date">${formatDate(ev.event_date)}</span>
+            <h3>${escapeHtml(ev.title)}</h3>
+            <p class="muted">${escapeHtml(ev.description)}</p>
+            <div class="event-location">📍 ${escapeHtml(ev.location)}</div>
+          </div>
+        `).join("");
+        } catch (err) {
+            el.innerHTML = `<p class="muted text-center">Unable to load events right now.</p>`;
+        }
+    })();
+</script>
+</body>
+</html>

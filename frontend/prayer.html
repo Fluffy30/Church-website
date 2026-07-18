@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayer Requests — Grace Community Church</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+    <div class="container nav">
+        <a href="index.html" class="nav-brand"><span class="cross">✝</span> Grace Community Church</a>
+        <button class="nav-toggle" aria-label="Toggle menu">☰</button>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="events.html">Events</a></li>
+            <li><a href="prayer.html" class="active">Prayer Requests</a></li>
+            <li><a href="register.html">Connect / Register</a></li>
+            <li data-auth="user"><a href="messages.html">Messages</a></li>
+            <li data-auth="staff"><a href="dashboard.html">Dashboard</a></li>
+            <li data-auth="guest"><a href="login.html" class="btn btn-primary btn-sm">Login</a></li>
+            <li data-auth="user"><a href="#" data-logout>Logout</a></li>
+        </ul>
+    </div>
+</header>
+
+<section class="section">
+    <div class="container">
+        <h1 class="section-title text-center">Submit a Prayer Request</h1>
+        <p class="section-subtitle">
+            Your request is kept private and is only seen by our pastoral team. You may submit anonymously if you prefer.
+        </p>
+
+        <div class="form-card">
+            <div id="alert-box"></div>
+            <form id="prayer-form">
+                <label for="full_name">Your Name</label>
+                <input type="text" id="full_name" name="full_name" placeholder="e.g. John Doe" required>
+
+                <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="is_anonymous" style="width:auto;">
+                    <label for="is_anonymous" style="margin:0;">Submit this anonymously</label>
+                </div>
+
+                <label for="contact_info">Contact Info (optional)</label>
+                <input type="text" id="contact_info" name="contact_info" placeholder="Phone or email, if you'd like a follow-up">
+                <p class="form-note">Only shared with our prayer/pastoral team, never made public.</p>
+
+                <label for="request_text">Your Prayer Request</label>
+                <textarea id="request_text" name="request_text" placeholder="Share as much or as little as you're comfortable with…" required></textarea>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-block" id="submit-btn">Submit Privately</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="container footer-small">&copy; 2026 Grace Community Church. All rights reserved.</div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/prayer.js"></script>
+</body>
+</html>

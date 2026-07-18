@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events — Grace Community Church</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+    <div class="container nav">
+        <a href="index.html" class="nav-brand"><span class="cross">✝</span> Grace Community Church</a>
+        <button class="nav-toggle" aria-label="Toggle menu">☰</button>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="events.html" class="active">Events</a></li>
+            <li><a href="prayer.html">Prayer Requests</a></li>
+            <li><a href="register.html">Connect / Register</a></li>
+            <li data-auth="user"><a href="messages.html">Messages</a></li>
+            <li data-auth="staff"><a href="dashboard.html">Dashboard</a></li>
+            <li data-auth="guest"><a href="login.html" class="btn btn-primary btn-sm">Login</a></li>
+            <li data-auth="user"><a href="#" data-logout>Logout</a></li>
+        </ul>
+    </div>
+</header>
+
+<section class="hero" style="padding:56px 0;">
+    <div class="container">
+        <h1>Upcoming Outreaches & Events</h1>
+        <p>Join us — everyone is welcome at every gathering.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div id="alert-box"></div>
+        <div id="events-list" class="grid">
+            <p class="muted text-center">Loading events…</p>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="container footer-small">&copy; 2026 Grace Community Church. All rights reserved.</div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/events.js"></script>
+</body>
+</html>
