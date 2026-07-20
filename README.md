@@ -42,6 +42,7 @@ church-website/
 │   │   └── users.js           # staff-only member management
 │   ├── sockets/chat.js        # Socket.IO real-time messaging, JWT-authenticated
 │   ├── utils/seedAdmin.js     # creates the first admin account from .env
+│   ├── utils/passwordReset.js # secure token generation/verification for password resets
 │   ├── .env.example           # copy to .env and edit
 │   └── package.json
 │
@@ -51,6 +52,7 @@ church-website/
     ├── prayer.html              # private prayer request form
     ├── register.html            # registration / follow-up form
     ├── login.html / signup.html # member auth
+    ├── forgot-password.html / reset-password.html # password reset flow
     ├── messages.html             # real-time group chat
     ├── dashboard.html            # staff dashboard (events, prayers, follow-ups, members, groups)
     ├── css/styles.css            # single shared stylesheet — change design tokens at the top
@@ -127,7 +129,74 @@ Go to `login.html` and use the admin credentials from your `.env` file. From the
 - Consider moving the JWT from `localStorage` to an httpOnly cookie for extra XSS protection (noted in `frontend/js/api.js`).
 - Add real email/SMS/WhatsApp integration for follow-up notifications (currently, staff just see a dashboard list — wiring up Twilio/WhatsApp Business API or an email provider is a natural next step).
 - Set up regular backups of the `backend/data/church.db` file (or migrate to a managed Postgres instance for larger congregations).
-- Add a password-reset flow (not included in this first version).
+
+### Password reset (added)
+
+Two flows are supported:
+
+1. **Self-service**: a member visits `forgot-password.html`, enters their email, and hits `POST /api/auth/forgot-password`. **No email provider is wired up yet**, so the actual reset link is written to the **server console log only** — not returned to the browser — for a staff member with server access to relay manually. Once you add a real email provider (see "Suggested Roadmap" below), replace the `console.log` in `routes/auth.js` with an actual send-email call; nothing else needs to change.
+2. **Admin-assisted**: from the Dashboard → Members tab, staff can click "Reset Password" next to any member to instantly generate a one-time reset link, shown in a copyable modal, to send manually (text/WhatsApp/in person). Useful right now, before email is automated.
+
+Reset tokens: random 256-bit values, only a SHA-256 hash is ever stored (same principle as password hashing), expire after 60 minutes, and are single-use.
+
+### Email system (added)
+
+**Sending emails**: `backend/utils/mailer.js` sends through any standard SMTP provider — SendGrid, Mailgun, Postmark, Amazon SES, Gmail SMTP, or your own mail host. Configure it via `.env` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — examples for common providers are in `.env.example`). **If `SMTP_HOST` is left blank, emails are printed to the server console instead of sent** — so the app works out of the box for local testing, but you must fill this in before real launch.
+
+**Email verification**: every new signup automatically gets a verification email (24-hour link). Verification is currently *non-blocking* — unverified members can still log in — so a delayed or missed email never locks someone out. Instead, a small dismissible banner appears site-wide reminding them to verify, with a one-click resend. Endpoints: `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`.
+
+**Automatic notifications now wired up**:
+- Verification email on signup
+- Password reset email (self-service) — same token system as before, now actually emailed instead of console-only
+- Confirmation email to anyone who submits a prayer request with an email address
+- Confirmation email to anyone who submits the "Connect With Us" form with an email
+- Optional: set `ADMIN_NOTIFICATION_EMAIL` in `.env` to get an email alert whenever a new prayer request or registration comes in
+
+All of the above degrade gracefully — if SMTP isn't configured, or an email fails to send, the person's action (signup, prayer request, etc.) still succeeds; only the email itself is skipped/logged.
+
+**Not yet covered by email** (still on the roadmap): staff-initiated bulk emails to members, digest/newsletter emails.
+
+### Account lockout (added)
+
+After 5 consecutive failed login attempts, an account is locked for 15 minutes — even a correct password is rejected while locked, so an attacker can't tell they've found the right one. This is separate from (and on top of) the IP-based rate limiting on the login endpoint: rate limiting slows down one IP hitting many accounts, lockout protects one account even if attempts are spread across many IPs. A successful login resets the counter. Staff can unlock an account early from the Dashboard → Members tab instead of making someone wait out the full window. Thresholds are set in `routes/auth.js` (`LOCKOUT_THRESHOLD`, `LOCKOUT_MINUTES`).
+
+### Session revocation (added)
+
+JWTs are normally stateless — once issued, valid until they expire, with no way to invalidate one early. To allow revocation, every user has a `token_version` counter in the database, embedded in each JWT at login. Every authenticated request checks the token's version against the current database value; if they don't match, the session is treated as revoked even though the token hasn't technically expired.
+
+This powers:
+- **"Log out everywhere"** — a link next to the normal Logout link (added via `nav.js`) for any logged-in user, in case they think a device is lost or a session looks compromised.
+- **Admin "Force Logout"** — a button per member in the Dashboard → Members tab, for staff to instantly sign someone out of every device without changing their password.
+- **Automatic revocation on password reset** — resetting a password (self-service or admin-assisted) signs out every existing session, in case the old password was compromised.
+- **Immediate effect on deactivation** — deactivating a member's account now kills their active session on their very next request, not just the next time they try to log in.
+
+### Uptime monitoring (added)
+
+`GET /api/health` now actually queries the database rather than just confirming the Node process is alive, so it correctly reports unhealthy if the database is unreachable. Point a free monitoring service at it:
+
+1. Sign up for [UptimeRobot](https://uptimerobot.com), [Better Uptime](https://betterstack.com/better-uptime), or similar (most have a free tier).
+2. Add an HTTP(s) monitor pointed at `https://your-backend-url/api/health`, checked every 1–5 minutes.
+3. Set it to alert (email/SMS) if the response isn't a 200 with `"status":"ok"` in the body, or if the request times out.
+4. This only monitors the backend — GitHub Pages/static frontend hosting is generally very reliable and doesn't typically need separate monitoring, but you can add a second monitor for your frontend URL too if you want full coverage.
+
+### SMS & WhatsApp (added)
+
+`backend/utils/sms.js` sends real SMS and WhatsApp messages via Twilio, configured through `.env` (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` — see `.env.example` for setup notes and a link to the Twilio console). **If Twilio isn't configured, messages are printed to the server console instead of sent** — same safe-fallback pattern as the email system.
+
+This is now wired into:
+- **Registration confirmations** — sent via whichever channel the person actually chose (email → email; phone → SMS; WhatsApp → WhatsApp), instead of always defaulting to email regardless of stated preference.
+- **Prayer request confirmations** — if the contact info they left looks like an email, they get an email; if it looks like a phone number instead, they get an SMS.
+
+Twilio was chosen because — unlike email, where SMTP is a shared standard across providers — SMS/WhatsApp providers don't share a common protocol, so there's no equivalent provider-agnostic abstraction. If you'd rather use a different provider, `utils/sms.js` is the one file you'd need to change.
+
+### Privacy policy (added)
+
+`frontend/privacy.html` is a plain-language starting-point privacy policy explaining what's collected, why, and who can see it. It's linked from the footer of every page, plus called out directly on the prayer request, registration, and signup forms — right where people are actually handing over personal information.
+
+**Before you launch, you need to:**
+- Replace `[DATE]` with a real date, and keep it updated when you change the policy.
+- Replace the placeholder `privacy@example.com` with your church's real contact email for privacy requests.
+- Have someone familiar with your local privacy/data protection laws review it — this is a solid starting template, not legal advice, and requirements vary by country/state.
 
 ---
 

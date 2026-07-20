@@ -35,6 +35,10 @@ db.exec(`
     role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin','leader','member')),
     contact_preference TEXT DEFAULT 'email' CHECK (contact_preference IN ('phone','whatsapp','email')),
     is_active INTEGER NOT NULL DEFAULT 1,
+    email_verified INTEGER NOT NULL DEFAULT 0,
+    failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+    locked_until TEXT, -- NULL = not locked; otherwise an ISO timestamp in the future
+    token_version INTEGER NOT NULL DEFAULT 0, -- bumping this invalidates all previously issued JWTs
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -97,6 +101,58 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_messages_group ON messages(group_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
+
+  -- Generic one-time tokens: used for password resets AND email
+  -- verification (see "purpose"). We store a HASH of the token, never the
+  -- raw token itself — same principle as password storage. The raw token
+  -- is only ever seen by the person it's for (via email, or the
+  -- admin-assisted reset flow), never persisted anywhere.
+  CREATE TABLE IF NOT EXISTS auth_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    purpose TEXT NOT NULL CHECK (purpose IN ('password_reset','email_verification')),
+    token_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_by TEXT NOT NULL DEFAULT 'self' CHECK (created_by IN ('self','admin','system')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id, purpose);
 `);
+
+// -----------------------------------------------------------------------
+// Lightweight migrations for databases created by an earlier version of
+// this app (e.g. before `email_verified` or `auth_tokens` existed).
+// Safe to run every time the server starts — each check is a no-op if
+// already applied.
+// -----------------------------------------------------------------------
+const userColumns = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name);
+if (!userColumns.includes("email_verified")) {
+    db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0");
+}
+if (!userColumns.includes("failed_login_attempts")) {
+    db.exec("ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0");
+}
+if (!userColumns.includes("locked_until")) {
+    db.exec("ALTER TABLE users ADD COLUMN locked_until TEXT");
+}
+if (!userColumns.includes("token_version")) {
+    db.exec("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0");
+}
+
+// Older versions of this app used a `password_resets` table instead of the
+// generic `auth_tokens` table. Migrate any still-valid rows over, then
+// leave the old table in place (harmless) rather than risk a destructive
+// DROP TABLE on someone's live data.
+const tableNames = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((t) => t.name);
+if (tableNames.includes("password_resets")) {
+    db.exec(`
+    INSERT INTO auth_tokens (user_id, purpose, token_hash, expires_at, used, created_by, created_at)
+    SELECT user_id, 'password_reset', token_hash, expires_at, used, created_by, created_at
+    FROM password_resets
+    WHERE used = 0
+  `);
+}
 
 module.exports = db;
