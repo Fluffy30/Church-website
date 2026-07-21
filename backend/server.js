@@ -22,6 +22,7 @@ const { Server } = require("socket.io");
 
 const seedAdmin = require("./utils/seedAdmin");
 const initChatSockets = require("./sockets/chat");
+const db = require("./config/db");
 
 const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events");
@@ -66,7 +67,23 @@ app.use(
 );
 
 // --- Routes ---------------------------------------------------------------
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+// GET /api/health — meant for uptime monitoring (UptimeRobot, Better
+// Uptime, Pingdom, etc.), not just "is the process alive". It actually
+// queries the database, so if the DB is unreachable/corrupted this
+// reports unhealthy instead of falsely reporting OK. Point your monitor's
+// "keyword" check at `"status":"ok"` so it also catches the unhealthy case.
+app.get("/api/health", (req, res) => {
+    try {
+        db.prepare("SELECT 1").get();
+        res.json({
+            status: "ok",
+            uptimeSeconds: Math.floor(process.uptime()),
+            timestamp: new Date().toISOString(),
+        });
+    } catch (err) {
+        res.status(503).json({ status: "unhealthy", error: "Database check failed." });
+    }
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);

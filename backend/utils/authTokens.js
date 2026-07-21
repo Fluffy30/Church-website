@@ -47,7 +47,7 @@ function findValidAuthToken(purpose, rawToken) {
     const row = db
         .prepare(
             `SELECT * FROM auth_tokens
-       WHERE purpose = ? AND token_hash = ? AND used = 0 AND expires_at > datetime('now')`
+             WHERE purpose = ? AND token_hash = ? AND used = 0 AND expires_at > datetime('now')`
         )
         .get(purpose, tokenHash);
     return row || null;

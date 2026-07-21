@@ -10,8 +10,14 @@ const { body, validationResult } = require("express-validator");
 const rateLimit = require("express-rate-limit");
 const db = require("../config/db");
 const { requireAuth, requireRole, optionalAuth } = require("../middleware/auth");
+const { sendEmail } = require("../utils/mailer");
+const { sendSms } = require("../utils/sms");
 
 const router = express.Router();
+
+// Very small helper — just enough to decide whether contact_info looks
+// like an email address (vs. a phone number) before trying to send to it.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Prevent spam/abuse of the public submission endpoint.
 const submitLimiter = rateLimit({
@@ -33,7 +39,7 @@ router.post(
         body("contact_info").optional({ checkFalsy: true }).trim(),
         body("is_anonymous").optional().isBoolean(),
     ],
-    (req, res) => {
+    async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
@@ -50,6 +56,38 @@ router.post(
         // Deliberately return only a confirmation, not the stored data, to
         // reinforce that this information is private once submitted.
         res.status(201).json({ success: true, id: result.lastInsertRowid });
+
+        // Send confirmation + staff notification AFTER responding, so a slow
+        // or failed email/SMS never delays or breaks the person's submission.
+        // If we know their email (logged in, or they typed an email-shaped
+        // contact_info), confirm by email. Otherwise, if contact_info looks
+        // like a phone number, try SMS instead — either way, whoever left
+        // contact info hears back on the channel they actually gave us.
+        const confirmEmail = req.user ? req.user.email : (contact_info && EMAIL_PATTERN.test(contact_info) ? contact_info : null);
+
+        if (confirmEmail) {
+            sendEmail({
+                to: confirmEmail,
+                subject: "We received your prayer request — Grace Community Church",
+                text: `Hi ${is_anonymous ? "there" : full_name},\n\nYour prayer request has been received privately by our pastoral team. We are praying for you.\n\nGrace Community Church`,
+            }).catch((err) => console.error("[prayers] confirmation email failed:", err.message));
+        } else if (contact_info && !EMAIL_PATTERN.test(contact_info)) {
+            // contact_info was provided but isn't email-shaped — treat it as a
+            // phone number and try SMS. sendSms() itself validates the format
+            // and safely no-ops (with a log) if it still doesn't look right.
+            sendSms({
+                to: contact_info,
+                body: `Hi ${is_anonymous ? "there" : full_name}, your prayer request to Grace Community Church has been received privately. We are praying for you.`,
+            }).catch((err) => console.error("[prayers] confirmation SMS failed:", err.message));
+        }
+
+        if (process.env.ADMIN_NOTIFICATION_EMAIL) {
+            sendEmail({
+                to: process.env.ADMIN_NOTIFICATION_EMAIL,
+                subject: "New prayer request submitted",
+                text: `A new prayer request was submitted${is_anonymous ? " (anonymous)" : ` by ${full_name}`}.\n\nView it in the dashboard: ${process.env.FRONTEND_ORIGIN}/dashboard.html`,
+            }).catch((err) => console.error("[prayers] staff notification email failed:", err.message));
+        }
     }
 );
 

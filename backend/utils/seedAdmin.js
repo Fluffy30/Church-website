@@ -18,7 +18,7 @@ function seedAdmin() {
 
     db.prepare(
         `INSERT INTO users (name, email, password_hash, role, contact_preference)
-     VALUES (?, ?, ?, 'admin', 'email')`
+         VALUES (?, ?, ?, 'admin', 'email')`
     ).run(name, email, hash);
 
     console.log(`\n[seed] First admin account created:`);

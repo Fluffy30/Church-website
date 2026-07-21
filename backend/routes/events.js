@@ -47,7 +47,7 @@ router.post(
         const result = db
             .prepare(
                 `INSERT INTO events (title, description, location, event_date, created_by)
-         VALUES (?, ?, ?, ?, ?)`
+                 VALUES (?, ?, ?, ?, ?)`
             )
             .run(title, description, location, event_date, req.user.id);
 

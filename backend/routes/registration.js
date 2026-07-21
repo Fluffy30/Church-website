@@ -10,6 +10,8 @@ const { body, validationResult } = require("express-validator");
 const rateLimit = require("express-rate-limit");
 const db = require("../config/db");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const { sendEmail } = require("../utils/mailer");
+const { sendSms } = require("../utils/sms");
 
 const router = express.Router();
 
@@ -49,11 +51,36 @@ router.post(
         const result = db
             .prepare(
                 `INSERT INTO registrations (full_name, email, phone, contact_preference, notes)
-         VALUES (?, ?, ?, ?, ?)`
+                 VALUES (?, ?, ?, ?, ?)`
             )
             .run(full_name, email || null, phone || null, contact_preference, notes || null);
 
         res.status(201).json({ success: true, id: result.lastInsertRowid });
+
+        // Send confirmation AFTER responding, via whichever channel the person
+        // actually asked for — so "prefers WhatsApp" really means they hear
+        // back on WhatsApp, not just that we noted the preference somewhere.
+        if (contact_preference === "email" && email) {
+            sendEmail({
+                to: email,
+                subject: "Thanks for connecting with us — Grace Community Church",
+                text: `Hi ${full_name},\n\nThank you for reaching out! Someone from our team will contact you soon.\n\nGrace Community Church`,
+            }).catch((err) => console.error("[registrations] confirmation email failed:", err.message));
+        } else if ((contact_preference === "phone" || contact_preference === "whatsapp") && phone) {
+            sendSms({
+                to: phone,
+                body: `Hi ${full_name}, thanks for reaching out to Grace Community Church! Someone from our team will contact you soon.`,
+                channel: contact_preference === "whatsapp" ? "whatsapp" : "sms",
+            }).catch((err) => console.error("[registrations] confirmation SMS/WhatsApp failed:", err.message));
+        }
+
+        if (process.env.ADMIN_NOTIFICATION_EMAIL) {
+            sendEmail({
+                to: process.env.ADMIN_NOTIFICATION_EMAIL,
+                subject: "New contact / follow-up request",
+                text: `${full_name} just submitted a "Connect With Us" form (prefers ${contact_preference}).\n\nView it in the dashboard: ${process.env.FRONTEND_ORIGIN}/dashboard.html`,
+            }).catch((err) => console.error("[registrations] staff notification email failed:", err.message));
+        }
     }
 );
 

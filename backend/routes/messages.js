@@ -32,9 +32,9 @@ router.get("/", requireAuth, (req, res) => {
         groups = db
             .prepare(
                 `SELECT g.* FROM groups g
-         JOIN group_members gm ON gm.group_id = g.id
-         WHERE gm.user_id = ?
-         ORDER BY g.created_at DESC`
+                                     JOIN group_members gm ON gm.group_id = g.id
+                 WHERE gm.user_id = ?
+                 ORDER BY g.created_at DESC`
             )
             .all(req.user.id);
     }
@@ -109,8 +109,8 @@ router.get("/:id/members", requireAuth, (req, res) => {
     const members = db
         .prepare(
             `SELECT u.id, u.name, u.email, u.role FROM users u
-       JOIN group_members gm ON gm.user_id = u.id
-       WHERE gm.group_id = ?`
+                                                           JOIN group_members gm ON gm.user_id = u.id
+             WHERE gm.group_id = ?`
         )
         .all(req.params.id);
 
@@ -128,11 +128,11 @@ router.get("/:id/messages", requireAuth, (req, res) => {
     const messages = db
         .prepare(
             `SELECT m.id, m.content, m.created_at, u.id as sender_id, u.name as sender_name
-       FROM messages m
-       JOIN users u ON u.id = m.sender_id
-       WHERE m.group_id = ?
-       ORDER BY m.created_at ASC
-       LIMIT 200`
+             FROM messages m
+                      JOIN users u ON u.id = m.sender_id
+             WHERE m.group_id = ?
+             ORDER BY m.created_at ASC
+                 LIMIT 200`
         )
         .all(req.params.id);
 
@@ -163,7 +163,7 @@ router.post(
         const message = db
             .prepare(
                 `SELECT m.id, m.content, m.created_at, u.id as sender_id, u.name as sender_name
-         FROM messages m JOIN users u ON u.id = m.sender_id WHERE m.id = ?`
+                 FROM messages m JOIN users u ON u.id = m.sender_id WHERE m.id = ?`
             )
             .get(result.lastInsertRowid);
 
